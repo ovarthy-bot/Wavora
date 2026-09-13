@@ -71,7 +71,7 @@ private const val SEEK_CONFIRM_TIMEOUT_MS = 2000L
 // aparezca otra causa de cuelgue en el futuro, nunca se vuelva a repetir un
 // silencio en cascada de varios minutos - como máximo el fallback de abajo
 // entra a los pocos segundos y salta al siguiente track sin crossfade.
-private const val CROSSFADE_WATCHDOG_TIMEOUT_MS = 6000L
+private const val CROSSFADE_WATCHDOG_TIMEOUT_MS = 20000L // Increased from 6000L to handle dynamic pre-fade waits
 
 // AUDIT FIX: withTimeout() (a diferencia de let/run/apply) NO es inline, así
 // que un "return@launch" de adentro suyo no compila ("'return' is prohibited
@@ -2070,6 +2070,17 @@ class VlcPlayerAdapter(
                         "Crossfade duration: configured=${resolvedConfigDurationMs}ms (auto=$isAutoMode), " +
                             "actualRemaining=${actualTimeRemaining}ms, effective=${effectiveCrossfadeDurationMs}ms",
                     )
+
+                    val extraWaitMs = actualTimeRemaining - effectiveCrossfadeDurationMs
+                    if (extraWaitMs > 0) {
+                        Logger.d(TAG, "Waiting ${extraWaitMs}ms before starting crossfade animation")
+                        CrossfadeAudit.log(
+                            "CROSSFADE_PRE_FADE_WAIT",
+                            playerId = currentPlayer?.id,
+                            details = "extraWaitMs=$extraWaitMs",
+                        )
+                        delay(extraWaitMs)
+                    }
 
                     performCrossfade(nextIndex, nextPlayer, effectiveCrossfadeDurationMs)
                     } // fin withTimeout(CROSSFADE_WATCHDOG_TIMEOUT_MS)

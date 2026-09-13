@@ -2076,6 +2076,13 @@ internal class CrossfadeExoPlayerAdapter(
                         "actualRemaining=${actualTimeRemaining}ms, effective=${effectiveCrossfadeDurationMs}ms",
                 )
 
+                // Fix: if triggered early due to preparationBufferMs, wait before starting the fade
+                val extraWaitMs = actualTimeRemaining - effectiveCrossfadeDurationMs
+                if (extraWaitMs > 0) {
+                    Logger.d(TAG, "Waiting ${extraWaitMs}ms before starting crossfade animation")
+                    delay(extraWaitMs)
+                }
+
                 // Perform crossfade animation with effective duration and AutoMix parameters
                 performCrossfade(nextIndex, nextPlayer, effectiveCrossfadeDurationMs, bpmSpeedRatio, keyPitchRatio)
             } catch (e: Exception) {
