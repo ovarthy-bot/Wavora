@@ -175,13 +175,18 @@ class VlcPlayerAdapter(
             .getProperty("compose.application.resources.dir")
             ?.let { System.setProperty("jna.library.path", it) }
         // Use custom NativeDiscoveryStrategy to find bundled VLC libraries
-        // DefaultVlcDiscoverer handles Windows/Linux, MacOsVlcDiscoverer handles macOS
-        val discovery =
+        var discovery =
             NativeDiscovery(
                 DefaultVlcDiscoverer(),
                 MacOsVlcDiscoverer(),
             )
-        val found = discovery.discover()
+        var found = discovery.discover()
+        if (!found) {
+            Logger.w(TAG, "Bundled VLC native libraries not found, falling back to system VLC...")
+            discovery = NativeDiscovery()
+            found = discovery.discover()
+        }
+        
         if (!found) {
             Logger.e(TAG, "VLC native libraries not found! Please install VLC media player.")
         }
