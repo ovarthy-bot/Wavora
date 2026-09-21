@@ -399,6 +399,17 @@ class NowPlayingBottomSheetViewModel(
                             }
                         }
                 }
+                is NowPlayingBottomSheetUIEvent.BlockSong -> {
+                    songRepository.blockSong(songUIState.videoId)
+                    makeToast("Song blocked")
+                }
+
+                is NowPlayingBottomSheetUIEvent.BlockArtist -> {
+                    songUIState.listArtists.forEach { artist ->
+                        artist.id?.let { songRepository.blockArtist(it) }
+                    }
+                    makeToast("Artist(s) blocked")
+                }
             }
         }
     }
@@ -465,4 +476,8 @@ sealed class NowPlayingBottomSheetUIEvent {
     ) : NowPlayingBottomSheetUIEvent()
 
     data object Share : NowPlayingBottomSheetUIEvent()
+
+    data object BlockSong : NowPlayingBottomSheetUIEvent()
+
+    data object BlockArtist : NowPlayingBottomSheetUIEvent()
 }

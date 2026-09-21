@@ -26,6 +26,9 @@ import com.wavora.domain.model.entities.TranslatedLyricsEntity
 import com.wavora.domain.model.entities.YourYouTubePlaylistList
 import com.wavora.domain.model.entities.analytics.EventArtistEntity
 import com.wavora.domain.model.entities.analytics.PlaybackEventEntity
+import com.wavora.domain.model.entities.BlockedArtistEntity
+import com.wavora.domain.model.entities.BlockedSongEntity
+import com.wavora.domain.model.entities.PlaybackSessionEntity
 
 @Database(
     entities = [
@@ -33,9 +36,10 @@ import com.wavora.domain.model.entities.analytics.PlaybackEventEntity
         AlbumEntity::class, PlaylistEntity::class, LocalPlaylistEntity::class, LyricsEntity::class, QueueEntity::class,
         SetVideoIdEntity::class, PairSongLocalPlaylist::class, GoogleAccountEntity::class, FollowedArtistSingleAndAlbum::class,
         NotificationEntity::class, TranslatedLyricsEntity::class, PodcastsEntity::class, EpisodeEntity::class,
-        YourYouTubePlaylistList::class, PlaybackEventEntity::class, EventArtistEntity::class
+        YourYouTubePlaylistList::class, PlaybackEventEntity::class, EventArtistEntity::class,
+        BlockedArtistEntity::class, BlockedSongEntity::class, PlaybackSessionEntity::class
     ],
-    version = 23,
+    version = 25,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 2, to = 3), AutoMigration(
@@ -75,6 +79,8 @@ import com.wavora.domain.model.entities.analytics.PlaybackEventEntity
         // additions are schema-additive — Room's AutoMigration handles them with no
         // manual Migration class needed.
         AutoMigration(22, 23),
+        AutoMigration(23, 24),
+        AutoMigration(24, 25),
     ],
 )
 @TypeConverters(Converters::class)

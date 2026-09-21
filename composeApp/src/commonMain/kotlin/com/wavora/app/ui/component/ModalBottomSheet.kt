@@ -171,6 +171,8 @@ import wavora.composeapp.generated.resources.Res
 import wavora.composeapp.generated.resources.close
 import wavora.composeapp.generated.resources.add_to_a_playlist
 import wavora.composeapp.generated.resources.add_to_queue
+import wavora.composeapp.generated.resources.block_song
+import wavora.composeapp.generated.resources.block_artist
 import wavora.composeapp.generated.resources.album
 import wavora.composeapp.generated.resources.artists
 import wavora.composeapp.generated.resources.baseline_access_alarm_24
@@ -1777,6 +1779,17 @@ fun NowPlayingBottomSheet(
                         viewModel.resetPlaylists()
                         addToAPlaylist = true
                     }
+                    val sharedViewModel = koinInject<com.wavora.app.viewModel.SharedViewModel>()
+                    val blockedSongs = sharedViewModel.blockedSongIds.collectAsState(initial = emptyList<String>()).value
+                    val isBlocked = blockedSongs.contains(uiState.songUIState.videoId)
+                    ActionButton(
+                        icon = painterResource(Res.drawable.baseline_delete_24),
+                        textString = if (isBlocked) "Engellendi" else "Engelle",
+                        text = null,
+                    ) {
+                        sharedViewModel.toggleBlockSong(uiState.songUIState.videoId)
+                        hideModalBottomSheet()
+                    }
                     ActionButton(
                         icon = painterResource(Res.drawable.play_circle),
                         text = Res.string.play_next,
@@ -1877,6 +1890,20 @@ fun NowPlayingBottomSheet(
                                 changePlaybackSpeedPitch = true
                             }
                         }
+                    }
+                    ActionButton(
+                        icon = painterResource(Res.drawable.baseline_delete_24),
+                        text = Res.string.block_song,
+                    ) {
+                        viewModel.onUIEvent(NowPlayingBottomSheetUIEvent.BlockSong)
+                        hideModalBottomSheet()
+                    }
+                    ActionButton(
+                        icon = painterResource(Res.drawable.baseline_delete_24),
+                        text = Res.string.block_artist,
+                    ) {
+                        viewModel.onUIEvent(NowPlayingBottomSheetUIEvent.BlockArtist)
+                        hideModalBottomSheet()
                     }
                     ActionButton(
                         icon = painterResource(Res.drawable.baseline_share_24),

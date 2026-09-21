@@ -21,6 +21,7 @@ import com.wavora.common.LOCAL_PLAYLIST_ID
 import com.wavora.common.LOCAL_PLAYLIST_ID_SAVED_QUEUE
 import com.wavora.common.MERGING_DATA_TYPE
 import com.wavora.common.TITLE
+import DatabaseDao
 import com.wavora.appdata.db.Converters
 import com.wavora.domain.model.entities.NewFormatEntity
 import com.wavora.domain.model.entities.SongEntity
@@ -110,6 +111,7 @@ internal class MediaServiceHandlerImpl(
     private val backgroundScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val context: Context = getKoin().get()
     override val player: MediaPlayerInterface = getKoin().get()
+    private val databaseDao: DatabaseDao = getKoin().get<DatabaseDao>()
 
     private var discordRPC: DiscordRPC? = null
     // Reintento automático y silencioso ante errores transitorios de red durante la
@@ -2001,9 +2003,18 @@ internal class MediaServiceHandlerImpl(
         val unit =
             suspend {
                 if (dataStoreManager.saveRecentSongAndQueue.first() == TRUE) {
+                    val videoId = nowPlayingState.value.songEntity?.videoId ?: ""
+                    val positionMs = player.contentPosition
                     dataStoreManager.saveRecentSong(
-                        nowPlayingState.value.songEntity?.videoId ?: "",
-                        player.contentPosition,
+                        videoId,
+                        positionMs,
+                    )
+                    databaseDao.insertPlaybackSession(
+                        com.wavora.domain.model.entities.PlaybackSessionEntity(
+                            videoId = videoId,
+                            positionMs = positionMs,
+                            timestamp = System.currentTimeMillis()
+                        )
                     )
                     dataStoreManager.setPlaylistFromSaved(queueData.value.data.playlistName ?: "")
                     Logger.d(
@@ -2124,7 +2135,9 @@ internal class MediaServiceHandlerImpl(
     override fun mayBeRestoreQueue() {
         coroutineScope.launch {
             if (dataStoreManager.saveRecentSongAndQueue.first() == TRUE) {
-                val currentPlayingTrack = songRepository.getSongById(dataStoreManager.recentMediaId.first()).lastOrNull()?.toTrack()
+                val session = databaseDao.getPlaybackSession()
+                val recentId = session?.videoId ?: dataStoreManager.recentMediaId.first()
+                val currentPlayingTrack = songRepository.getSongById(recentId).lastOrNull()?.toTrack()
                 if (currentPlayingTrack != null) {
                     val queue = songRepository.getSavedQueue().singleOrNull()
                     setQueueData(
@@ -2145,7 +2158,7 @@ internal class MediaServiceHandlerImpl(
                     addMediaItem(currentPlayingTrack.toGenericMediaItem(), playWhenReady = false)
                     loadPlaylistOrAlbum(index = index)
                     loadJob?.join()
-                    val savedPosition = dataStoreManager.recentPosition.first().toLong()
+                    val savedPosition = session?.positionMs ?: dataStoreManager.recentPosition.first().toLong()
                     resetCrossfade()
                     player.seekTo(index, savedPosition)
                 }

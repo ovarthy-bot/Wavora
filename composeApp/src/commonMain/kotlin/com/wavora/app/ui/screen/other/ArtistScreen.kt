@@ -266,6 +266,18 @@ fun ArtistScreen(
                                     }
                                 }
                                 Spacer(Modifier.width(4.dp))
+                                val isBlocked = sharedViewModel.blockedArtistIds.collectAsState(initial = emptyList<String>()).value.contains(channelId)
+                                OutlinedButton(
+                                    onClick = { sharedViewModel.toggleBlockArtist(channelId) },
+                                    colors =
+                                        ButtonDefaults.outlinedButtonColors().copy(
+                                            contentColor = Color.White,
+                                            containerColor = if (isBlocked) Color.Red.copy(alpha = 0.5f) else Color.Transparent,
+                                        ),
+                                ) {
+                                    Text(text = if (isBlocked) "Engellendi" else "Sanatçıyı engelle", color = Color.White)
+                                }
+                                Spacer(Modifier.width(4.dp))
                                 IconButton(
                                     onClick = {
                                         if (state.data.shuffleParam != null) {

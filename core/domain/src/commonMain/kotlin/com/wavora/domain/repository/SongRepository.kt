@@ -108,4 +108,17 @@ interface SongRepository {
     fun getRelatedData(videoId: String): Flow<Resource<Pair<List<Track>, String?>>>
 
     fun getRadioFromEndpoint(endpoint: YouTubeWatchEndpoint): Flow<Resource<Pair<List<Track>, String?>>>
+
+    // Block logic
+    suspend fun blockArtist(channelId: String)
+    suspend fun unblockArtist(channelId: String)
+    suspend fun isArtistBlocked(channelId: String): Boolean
+    fun getBlockedArtistIdsFlow(): Flow<List<String>>
+    suspend fun getBlockedArtistIds(): List<String>
+
+    suspend fun blockSong(videoId: String)
+    suspend fun unblockSong(videoId: String)
+    suspend fun isSongBlocked(videoId: String): Boolean
+    fun getBlockedSongIdsFlow(): Flow<List<String>>
+    suspend fun getBlockedSongIds(): List<String>
 }

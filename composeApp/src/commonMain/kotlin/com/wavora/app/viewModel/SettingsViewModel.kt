@@ -1635,9 +1635,16 @@ data class SettingAlertState(
     val textField: TextFieldData? = null,
     val selectOne: SelectData? = null,
     val multipleSelect: SelectData? = null,
+    val slider: SliderData? = null,
     val confirm: Pair<String, (SettingAlertState) -> Unit>,
     val dismiss: String,
 ) {
+    data class SliderData(
+        val value: Float,
+        val valueRange: ClosedFloatingPointRange<Float>,
+        val steps: Int = 0,
+        val labelFormatter: (Float) -> String = { it.toString() }
+    )
     data class TextFieldData(
         val label: String,
         val value: String = "",

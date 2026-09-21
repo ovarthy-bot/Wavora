@@ -34,7 +34,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalDateTime
-import com.wavora.domain.extension.now
 
 private const val TAG = "SongRepositoryImpl"
 
@@ -51,7 +50,7 @@ internal class SongRepositoryImpl(
     override suspend fun setInLibrary(
         videoId: String,
         inLibrary: LocalDateTime,
-    ) = withContext(Dispatchers.IO) { localDataSource.setInLibrary(videoId, inLibrary) }
+    ) = withContext(Dispatchers.IO) { localDataSource.setInLibrary(videoId, inLibrary) 
 
     override fun getSongsByListVideoId(listVideoId: List<String>): Flow<List<SongEntity>> =
         flow {
@@ -59,7 +58,7 @@ internal class SongRepositoryImpl(
             // (it returns rows in table/rowid order). Album tracks, local playlist items,
             // and queue snapshots all rely on caller-defined order, so we restore it here.
             val songs = localDataSource.getSongByListVideoIdFull(listVideoId)
-            val byId = songs.associateBy { it.videoId }
+            val byId = songs.associateBy { it.videoId 
             emit(listVideoId.mapNotNull { byId[it] })
         }.flowOn(Dispatchers.IO)
 
@@ -124,12 +123,12 @@ internal class SongRepositoryImpl(
     override suspend fun updateListenCount(videoId: String) =
         withContext(Dispatchers.IO) {
             localDataSource.updateListenCount(videoId)
-        }
+        
 
     override suspend fun resetTotalPlayTime(videoId: String) =
         withContext(Dispatchers.IO) {
             localDataSource.resetTotalPlayTime(videoId)
-        }
+        
 
     override suspend fun updateLikeStatus(
         videoId: String,
@@ -140,19 +139,19 @@ internal class SongRepositoryImpl(
 //            if (likeStatus == 1) {
 //                addToYouTubeLiked(videoId).collect { result ->
 //                    Logger.d(TAG, "updateLikeStatus -> addToYouTubeLiked: $result")
-//                }
+//                
 //            } else {
 //                removeFromYouTubeLiked(videoId).collect { result ->
 //                    Logger.d(TAG, "updateLikeStatus -> removeFromYouTubeLiked: $result")
-//                }
-//            }
-//        }
-    }
+//                
+//            
+//        
+    
 
     override fun updateSongInLibrary(
         inLibrary: LocalDateTime,
         videoId: String,
-    ): Flow<Int> = flow { emit(localDataSource.updateSongInLibrary(inLibrary, videoId)) }
+    ): Flow<Int> = flow { emit(localDataSource.updateSongInLibrary(inLibrary, videoId)) 
 
     override suspend fun updateDurationSeconds(
         durationSeconds: Int,
@@ -162,7 +161,7 @@ internal class SongRepositoryImpl(
             durationSeconds,
             videoId,
         )
-    }
+    
 
     override fun getMostPlayedSongs(): Flow<List<SongEntity>> = localDataSource.getMostPlayedSongs()
 
@@ -174,7 +173,7 @@ internal class SongRepositoryImpl(
             downloadState,
             videoId,
         )
-    }
+    
 
     override suspend fun getRecentSong(
         limit: Int,
@@ -184,19 +183,19 @@ internal class SongRepositoryImpl(
     override suspend fun insertSongInfo(songInfo: SongInfoEntity) =
         withContext(Dispatchers.IO) {
             localDataSource.insertSongInfo(songInfo)
-        }
+        
 
     override suspend fun getSongInfoEntity(videoId: String): Flow<SongInfoEntity?> =
         flow { emit(localDataSource.getSongInfo(videoId)) }.flowOn(Dispatchers.IO)
 
     override suspend fun recoverQueue(temp: List<Track>) {
         val queueEntity = QueueEntity(listTrack = temp)
-        withContext(Dispatchers.IO) { localDataSource.recoverQueue(queueEntity) }
-    }
+        withContext(Dispatchers.IO) { localDataSource.recoverQueue(queueEntity) 
+    
 
     override suspend fun removeQueue() {
-        withContext(Dispatchers.IO) { localDataSource.deleteQueue() }
-    }
+        withContext(Dispatchers.IO) { localDataSource.deleteQueue() 
+    
 
     override suspend fun getSavedQueue(): Flow<List<QueueEntity>?> =
         flow {
@@ -230,7 +229,7 @@ internal class SongRepositoryImpl(
                         }.onFailure { exception ->
                             exception.printStackTrace()
                             emit(Pair(null, null))
-                        }
+                        
                 } else {
                     youTube
                         .customQuery(
@@ -263,9 +262,9 @@ internal class SongRepositoryImpl(
                         }.onFailure {
                             Logger.e(TAG, "getContinueTrack -> Error: ${it.message}")
                             emit(Pair(null, null))
-                        }
-                }
-            }
+                        
+                
+            
         }.flowOn(Dispatchers.IO)
 
     override fun getSongInfo(videoId: String): Flow<SongInfoEntity?> =
@@ -276,7 +275,7 @@ internal class SongRepositoryImpl(
                         videoId.removePrefix(MERGING_DATA_TYPE.VIDEO)
                     } else {
                         videoId
-                    }
+                    
                 youTube
                     .getSongInfo(id)
                     .onSuccess { songInfo ->
@@ -300,8 +299,8 @@ internal class SongRepositoryImpl(
                     }.onFailure {
                         it.printStackTrace()
                         emit(getSongInfoEntity(videoId).lastOrNull())
-                    }
-            }
+                    
+            
         }.flowOn(Dispatchers.IO)
 
     override suspend fun getLikeStatus(videoId: String): Flow<Boolean> =
@@ -314,9 +313,9 @@ internal class SongRepositoryImpl(
                     }.onFailure {
                         it.printStackTrace()
                         emit(false)
-                    }
-            }
-        }
+                    
+            
+        
 
     override suspend fun addToYouTubeLiked(mediaId: String?): Flow<Int> =
         flow {
@@ -330,9 +329,9 @@ internal class SongRepositoryImpl(
                         }.onFailure {
                             it.printStackTrace()
                             emit(0)
-                        }
-                }
-            }
+                        
+                
+            
         }.flowOn(Dispatchers.IO)
 
     override suspend fun removeFromYouTubeLiked(mediaId: String?): Flow<Int> =
@@ -347,9 +346,9 @@ internal class SongRepositoryImpl(
                         }.onFailure {
                             it.printStackTrace()
                             emit(0)
-                        }
-                }
-            }
+                        
+                
+            
         }.flowOn(Dispatchers.IO)
 
     override fun downloadToFile(
@@ -374,7 +373,7 @@ internal class SongRepositoryImpl(
                     isError = it.isError,
                     isDone = it.isDone,
                 )
-            }
+            
 
     override fun getRelatedData(videoId: String): Flow<Resource<Pair<List<Track>, String?>>> =
         flow {
@@ -389,8 +388,8 @@ internal class SongRepositoryImpl(
                     }.onFailure { exception ->
                         exception.printStackTrace()
                         emit(Resource.Error<Pair<List<Track>, String?>>(exception.message.toString()))
-                    }
-            }
+                    
+            
         }.flowOn(Dispatchers.IO)
 
     override fun getRadioFromEndpoint(endpoint: YouTubeWatchEndpoint): Flow<Resource<Pair<List<Track>, String?>>> =
@@ -403,49 +402,7 @@ internal class SongRepositoryImpl(
                     }.onFailure {
                         it.printStackTrace()
                         emit(Resource.Error(it.message ?: "Error"))
-                    }
-            }
-        }
+                    
+            
+        
 
-    override suspend fun blockArtist(channelId: String) {
-        val now = now()
-        localDataSource.insertBlockedArtist(com.wavora.domain.model.entities.BlockedArtistEntity(channelId, now))
-    }
-
-    override suspend fun unblockArtist(channelId: String) {
-        localDataSource.deleteBlockedArtist(channelId)
-    }
-
-    override suspend fun isArtistBlocked(channelId: String): Boolean {
-        return localDataSource.getBlockedArtist(channelId) != null
-    }
-
-    override fun getBlockedArtistIdsFlow(): Flow<List<String>> {
-        return localDataSource.getAllBlockedArtistIdsFlow()
-    }
-
-    override suspend fun getBlockedArtistIds(): List<String> {
-        return localDataSource.getAllBlockedArtistIds()
-    }
-
-    override suspend fun blockSong(videoId: String) {
-        val now = now()
-        localDataSource.insertBlockedSong(com.wavora.domain.model.entities.BlockedSongEntity(videoId, now))
-    }
-
-    override suspend fun unblockSong(videoId: String) {
-        localDataSource.deleteBlockedSong(videoId)
-    }
-
-    override suspend fun isSongBlocked(videoId: String): Boolean {
-        return localDataSource.getBlockedSong(videoId) != null
-    }
-
-    override fun getBlockedSongIdsFlow(): Flow<List<String>> {
-        return localDataSource.getAllBlockedSongIdsFlow()
-    }
-
-    override suspend fun getBlockedSongIds(): List<String> {
-        return localDataSource.getAllBlockedSongIds()
-    }
-}

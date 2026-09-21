@@ -592,6 +592,11 @@ private fun androidx.compose.ui.window.ApplicationScope.MainAppWindow(
     val isUseDecorated = remember { false }
     Window(
         onCloseRequest = {
+            try {
+                org.koin.java.KoinJavaComponent.getKoin().get<com.wavora.domain.mediaservice.handler.MediaPlayerHandler>().mayBeSaveRecentSong(true)
+            } catch (e: Exception) {
+                // Ignored
+            }
             // Save window size and position for next launch
             if (windowState.placement == androidx.compose.ui.window.WindowPlacement.Floating) {
                 windowPrefs.putFloat("width", windowState.size.width.value)

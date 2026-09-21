@@ -58,6 +58,7 @@ val viewModelModule =
                 get(), // LocalPlaylistRepository
                 get(), // PlaylistRepository
                 get(), // CacheRepository
+                get(), // DatabaseDao
             )
         }
 

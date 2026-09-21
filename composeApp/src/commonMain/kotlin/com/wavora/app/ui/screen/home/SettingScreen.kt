@@ -1102,42 +1102,19 @@ fun SettingScreen(
                                 viewModel.setAlertData(
                                     SettingAlertState(
                                         title = crossfadeDurationLabel,
-                                        selectOne =
-                                            SettingAlertState.SelectData(
-                                                listSelect =
-                                                    listOf(
-                                                        (crossfadeDuration == DataStoreManager.CROSSFADE_DURATION_AUTO) to
-                                                            crossfadeAuto,
-                                                        (crossfadeDuration == 1000) to "1s",
-                                                        (crossfadeDuration == 2000) to "2s",
-                                                        (crossfadeDuration == 3000) to "3s",
-                                                        (crossfadeDuration == 5000) to "5s",
-                                                        (crossfadeDuration == 8000) to "8s",
-                                                        (crossfadeDuration == 10000) to "10s",
-                                                        (crossfadeDuration == 12000) to "12s",
-                                                        (crossfadeDuration == 15000) to "15s",
-                                                        (crossfadeDuration == 20000) to "20s",
-                                                        (crossfadeDuration == 30000) to "30s",
-                                                    ),
+                                        slider =
+                                            SettingAlertState.SliderData(
+                                                value = if (crossfadeDuration == DataStoreManager.CROSSFADE_DURATION_AUTO) 0f else (crossfadeDuration / 1000).toFloat(),
+                                                valueRange = 0f..20f,
+                                                steps = 19,
+                                                labelFormatter = { if (it == 0f) crossfadeAuto else "${it.toInt()}s" },
                                             ),
                                         confirm =
                                             change to { state ->
                                                 val duration =
-                                                    when (state.selectOne?.getSelected()) {
-                                                        crossfadeAuto,
-                                                        -> DataStoreManager.CROSSFADE_DURATION_AUTO
-                                                        "1s" -> 1000
-                                                        "2s" -> 2000
-                                                        "3s" -> 3000
-                                                        "5s" -> 5000
-                                                        "8s" -> 8000
-                                                        "10s" -> 10000
-                                                        "12s" -> 12000
-                                                        "15s" -> 15000
-                                                        "20s" -> 20000
-                                                        "30s" -> 30000
-                                                        else -> 5000
-                                                    }
+                                                    state.slider?.value?.let { v ->
+                                                        if (v == 0f) DataStoreManager.CROSSFADE_DURATION_AUTO else (v.toInt() * 1000)
+                                                    } ?: DataStoreManager.CROSSFADE_DURATION_AUTO
                                                 viewModel.setCrossfadeDuration(duration)
                                             },
                                         dismiss = cancel,
@@ -2534,6 +2511,30 @@ fun SettingScreen(
                                 Text(text = item.second, style = LocalAppTypography.current.bodyMedium, maxLines = 1)
                             }
                         }
+                    }
+                } else if (alertState.slider != null) {
+                    Column(
+                        Modifier
+                            .padding(vertical = 12.dp)
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = alertState.slider.labelFormatter(alertState.slider.value),
+                            style = LocalAppTypography.current.titleLarge
+                        )
+                        androidx.compose.material3.Slider(
+                            value = alertState.slider.value,
+                            onValueChange = { newValue ->
+                                viewModel.setAlertData(
+                                    alertState.copy(
+                                        slider = alertState.slider.copy(value = newValue)
+                                    )
+                                )
+                            },
+                            valueRange = alertState.slider.valueRange,
+                            steps = alertState.slider.steps
+                        )
                     }
                 }
             },

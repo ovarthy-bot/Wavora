@@ -20,6 +20,8 @@ import com.wavora.domain.model.entities.SongEntity
 import com.wavora.domain.model.entities.SongInfoEntity
 import com.wavora.domain.model.entities.TranslatedLyricsEntity
 import com.wavora.domain.model.entities.YourYouTubePlaylistList
+import com.wavora.domain.model.entities.BlockedArtistEntity
+import com.wavora.domain.model.entities.BlockedSongEntity
 import com.wavora.domain.extension.now
 import com.wavora.domain.utils.FilterState
 import kotlinx.datetime.LocalDateTime
@@ -117,6 +119,32 @@ internal class LocalDataSource(
         durationSeconds: Int,
         videoId: String,
     ) = databaseDao.updateDurationSeconds(durationSeconds, videoId)
+
+    suspend fun getPlaybackEventCountInRange(
+        startTimestamp: LocalDateTime,
+        endTimestamp: LocalDateTime,
+    ) = databaseDao.getPlaybackEventCountInRange(startTimestamp, endTimestamp)
+
+    // Block logic
+    suspend fun insertBlockedArtist(blockedArtist: BlockedArtistEntity) = databaseDao.insertBlockedArtist(blockedArtist)
+
+    suspend fun deleteBlockedArtist(channelId: String) = databaseDao.deleteBlockedArtist(channelId)
+
+    suspend fun getBlockedArtist(channelId: String) = databaseDao.getBlockedArtist(channelId)
+
+    suspend fun getAllBlockedArtistIds() = databaseDao.getAllBlockedArtistIds()
+
+    fun getAllBlockedArtistIdsFlow() = databaseDao.getAllBlockedArtistIdsFlow()
+
+    suspend fun insertBlockedSong(blockedSong: BlockedSongEntity) = databaseDao.insertBlockedSong(blockedSong)
+
+    suspend fun deleteBlockedSong(videoId: String) = databaseDao.deleteBlockedSong(videoId)
+
+    suspend fun getBlockedSong(videoId: String) = databaseDao.getBlockedSong(videoId)
+
+    suspend fun getAllBlockedSongIds() = databaseDao.getAllBlockedSongIds()
+
+    fun getAllBlockedSongIdsFlow() = databaseDao.getAllBlockedSongIdsFlow()
 
     suspend fun updateSongInLibrary(
         inLibrary: LocalDateTime,

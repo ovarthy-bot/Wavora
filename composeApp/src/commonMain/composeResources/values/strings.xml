@@ -671,4 +671,6 @@
     <string name="notification_primer_title">Stay in control from the notification shade</string>
     <string name="notification_primer_description">Wavora can show playback controls — play, pause, skip — right in your notifications, so you can control your music without opening the app. We'll only ask Android for this once.</string>
     <string name="notification_primer_allow">Allow</string>
+    <string name="block_song">Block Song</string>
+    <string name="block_artist">Block Artist</string>
 </resources>

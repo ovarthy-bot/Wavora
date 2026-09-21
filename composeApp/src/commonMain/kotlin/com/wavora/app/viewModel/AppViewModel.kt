@@ -142,10 +142,7 @@ class AppViewModel(
     // directly by the manual "check for update" button in Settings, which must always run
     // regardless of this preference.
     fun checkForUpdateIfEnabled() {
-        viewModelScope.launch {
-            if (dataStoreManager.autoCheckForUpdates.first() != TRUE) return@launch
-            checkForUpdate()
-        }
+        // Disabled per user request
     }
 
     // [isManual] distinguishes the automatic startup check (silent on

@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import DatabaseDao
 import org.koin.core.component.inject
 import kotlin.reflect.KClass
 import wavora.composeapp.generated.resources.Res
@@ -59,9 +60,33 @@ class SharedViewModel(
     private val localPlaylistRepository: LocalPlaylistRepository,
     private val playlistRepository: PlaylistRepository,
     private val cacheRepository: CacheRepository,
+    private val databaseDao: DatabaseDao,
 ) : BaseViewModel() {
 
-    // ── Sub-ViewModels injected via Koin ──────────────────────────────────
+    val blockedSongIds = databaseDao.getAllBlockedSongIdsFlow().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val blockedArtistIds = databaseDao.getAllBlockedArtistIdsFlow().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    fun toggleBlockArtist(artistId: String) {
+        viewModelScope.launch {
+            if (blockedArtistIds.value.contains(artistId)) {
+                databaseDao.deleteBlockedArtist(artistId)
+            } else {
+                databaseDao.insertBlockedArtist(com.wavora.domain.model.entities.BlockedArtistEntity(channelId = artistId, blockedAt = com.wavora.domain.extension.now()))
+            }
+        }
+    }
+
+    fun toggleBlockSong(videoId: String) {
+        viewModelScope.launch {
+            if (blockedSongIds.value.contains(videoId)) {
+                databaseDao.deleteBlockedSong(videoId)
+            } else {
+                databaseDao.insertBlockedSong(com.wavora.domain.model.entities.BlockedSongEntity(videoId = videoId, blockedAt = com.wavora.domain.extension.now()))
+            }
+        }
+    }
+
+    //  Sub-ViewModels injected via Koin ──────────────────────────────────
     val player: PlayerViewModel by inject()
     val nowPlaying: NowPlayingViewModel by inject()
     val app: AppViewModel by inject()

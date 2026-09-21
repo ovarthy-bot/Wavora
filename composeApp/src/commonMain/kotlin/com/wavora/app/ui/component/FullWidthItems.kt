@@ -45,6 +45,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
@@ -198,10 +199,15 @@ fun SongFullWidthItems(
                         }
                     },
         ) {
+            val sharedViewModel = koinInject<com.wavora.app.viewModel.SharedViewModel>()
+            val blockedSongs = sharedViewModel.blockedSongIds.collectAsState(initial = emptyList<String>()).value
+            val blockedArtists = sharedViewModel.blockedArtistIds.collectAsState(initial = emptyList<String>()).value
+            val isBlocked = blockedSongs.contains(track?.videoId ?: songEntity?.videoId ?: "") || (track?.artists?.any { blockedArtists.contains(it.id) } == true)
             Row(
                 Modifier
                     .padding(vertical = 6.dp, horizontal = 15.dp)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .alpha(if (isBlocked) 0.5f else 1f),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Spacer(modifier = Modifier.width(8.dp))

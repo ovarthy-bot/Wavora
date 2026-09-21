@@ -34,12 +34,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -632,10 +634,15 @@ fun HomeItemSong(
     onLongClick: () -> Unit,
     data: Content,
 ) {
+    val sharedViewModel = org.koin.compose.koinInject<com.wavora.app.viewModel.SharedViewModel>()
+    val blockedSongs = sharedViewModel.blockedSongIds.collectAsState(initial = emptyList<String>()).value
+    val blockedArtists = sharedViewModel.blockedArtistIds.collectAsState(initial = emptyList<String>()).value
+    val isBlocked = blockedSongs.contains(data.videoId ?: "") || (data.artists?.any { blockedArtists.contains(it.id) } == true)
     Box(
         modifier =
             Modifier
                 .fillMaxSize()
+                .alpha(if (isBlocked) 0.5f else 1f)
                 .focusable(true)
                 .clickable {
                     onClick()

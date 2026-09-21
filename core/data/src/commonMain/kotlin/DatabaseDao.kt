@@ -7,6 +7,9 @@ import androidx.room.RawQuery
 import androidx.room.RoomRawQuery
 import androidx.room.Transaction
 import androidx.room.Update
+import com.wavora.domain.model.entities.BlockedArtistEntity
+import com.wavora.domain.model.entities.BlockedSongEntity
+import com.wavora.domain.model.entities.PlaybackSessionEntity
 import com.wavora.domain.model.entities.AlbumEntity
 import com.wavora.domain.model.entities.ArtistEntity
 import com.wavora.domain.model.entities.EpisodeEntity
@@ -935,4 +938,43 @@ interface DatabaseDao {
         startTimestamp: LocalDateTime,
         endTimestamp: LocalDateTime,
     ): Long
+
+    // Blocked Artist
+    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
+    suspend fun insertBlockedArtist(blockedArtist: BlockedArtistEntity)
+
+    @Query("DELETE FROM blocked_artist WHERE channelId = :channelId")
+    suspend fun deleteBlockedArtist(channelId: String)
+
+    @Query("SELECT * FROM blocked_artist WHERE channelId = :channelId")
+    suspend fun getBlockedArtist(channelId: String): BlockedArtistEntity?
+
+    @Query("SELECT channelId FROM blocked_artist")
+    suspend fun getAllBlockedArtistIds(): List<String>
+
+    @Query("SELECT channelId FROM blocked_artist")
+    fun getAllBlockedArtistIdsFlow(): Flow<List<String>>
+
+    // Blocked Song
+    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
+    suspend fun insertBlockedSong(blockedSong: BlockedSongEntity)
+
+    @Query("DELETE FROM blocked_song WHERE videoId = :videoId")
+    suspend fun deleteBlockedSong(videoId: String)
+
+    @Query("SELECT * FROM blocked_song WHERE videoId = :videoId")
+    suspend fun getBlockedSong(videoId: String): BlockedSongEntity?
+
+    @Query("SELECT videoId FROM blocked_song")
+    suspend fun getAllBlockedSongIds(): List<String>
+
+    @Query("SELECT videoId FROM blocked_song")
+    fun getAllBlockedSongIdsFlow(): Flow<List<String>>
+
+    // Playback Session
+    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
+    suspend fun insertPlaybackSession(session: PlaybackSessionEntity)
+
+    @Query("SELECT * FROM playback_session WHERE id = 1")
+    suspend fun getPlaybackSession(): PlaybackSessionEntity?
 }

@@ -1961,6 +1961,7 @@ internal class CrossfadeExoPlayerAdapter(
                         )
                     nextPlayer = pwf.player
                     nextFilter = pwf.filter
+                    nextPlayer.volume = 0f
                     nextPlayer.setMediaItem(nextMediaItem.toMedia3MediaItem())
                     nextPlayer.prepare()
                 }
@@ -3077,6 +3078,7 @@ internal class CrossfadeExoPlayerAdapter(
                                     handleAudioFocus = false,
                                     bufferForPlaybackMs = CROSSFADE_BUFFER_FOR_PLAYBACK_MS,
                                 )
+                            pwf.player.volume = 0f
                             pwf.player.setMediaItem(mediaItem.toMedia3MediaItem())
                             pwf.player.prepare()
                             precachedPlayers[mediaItem.mediaId] = PrecachedPlayer(pwf.player, mediaItem, pwf.filter)

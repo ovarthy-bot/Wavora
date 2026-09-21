@@ -88,6 +88,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
+        try {
+            org.koin.java.KoinJavaComponent.getKoin().get<com.wavora.domain.mediaservice.handler.MediaPlayerHandler>().mayBeSaveRecentSong(true)
+        } catch (e: Exception) {
+            // Ignored
+        }
         if (shouldUnbind) {
             unbindService(serviceConnection)
         }

@@ -15,7 +15,7 @@ import com.wavora.common.LOCAL_PLAYLIST_ID_SAVED_QUEUE
 import com.wavora.common.MERGING_DATA_TYPE
 import com.wavora.common.TITLE
 import com.wavora.appdata.db.Converters
-import com.wavora.appdata.mediaservice.mac.MacOSMediaIntegration
+import kotlinx.coroutines.flow.update
 import com.wavora.appdata.mediaservice.mac.MacOSRemoteCommandListener
 import com.wavora.appdata.mediaservice.mac.NowPlayingInfo
 import com.wavora.domain.model.entities.NewFormatEntity
@@ -86,6 +86,9 @@ import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.flow.singleOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
+import DatabaseDao
+import kotlin.coroutines.CoroutineContext
+import com.wavora.appdata.mediaservice.mac.MacOSMediaIntegration
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -147,7 +150,10 @@ class JvmMediaPlayerHandlerImpl(
         }
     }
 
+    private val context: CoroutineContext = Dispatchers.IO
     override val player: MediaPlayerInterface = getKoin().get()
+    private val databaseDao: DatabaseDao = getKoin().get<DatabaseDao>()
+
     private var discordRPC: DiscordRPC? = null
     // Discord RPC is throttled: only update every 15 s (150 × 100 ms ticks).
     // When Discord is disabled discordRPC is null, so we skip the DataStore
@@ -1567,15 +1573,24 @@ class JvmMediaPlayerHandlerImpl(
         listTrack: ArrayList<Track>,
         isAddToQueue: Boolean,
     ) {
-        Logger.d("Queue", listTrack.map { it.title }.toString())
+        val blockedSongIds = songRepository.getBlockedSongIds()
+        val blockedArtistIds = songRepository.getBlockedArtistIds()
+
+        val filteredTracks = listTrack.filter { track ->
+            val isSongBlocked = blockedSongIds.contains(track.videoId)
+            val isArtistBlocked = track.artists?.any { blockedArtistIds.contains(it.id) } == true
+            !isSongBlocked && !isArtistBlocked
+        }
+
+        Logger.d("Queue", filteredTracks.map { it.title }.toString())
         _queueData.update {
             it.copy(
                 queueState = QueueData.StateSource.STATE_INITIALIZING,
             )
         }
         val catalogMetadata: ArrayList<Track> = arrayListOf()
-        for (i in 0 until listTrack.size) {
-            val track = listTrack[i]
+        for (i in 0 until filteredTracks.size) {
+            val track = filteredTracks[i]
             var thumbUrl =
                 track.thumbnails?.lastOrNull()?.url
                     ?: "http://i.ytimg.com/vi/${track.videoId}/maxresdefault.jpg"
@@ -2085,9 +2100,18 @@ class JvmMediaPlayerHandlerImpl(
         val unit =
             suspend {
                 if (dataStoreManager.saveRecentSongAndQueue.first() == TRUE) {
+                    val videoId = nowPlayingState.value.songEntity?.videoId ?: ""
+                    val positionMs = player.contentPosition
                     dataStoreManager.saveRecentSong(
-                        nowPlayingState.value.songEntity?.videoId ?: "",
-                        player.contentPosition,
+                        videoId,
+                        positionMs,
+                    )
+                    databaseDao.insertPlaybackSession(
+                        com.wavora.domain.model.entities.PlaybackSessionEntity(
+                            videoId = videoId,
+                            positionMs = positionMs,
+                            timestamp = System.currentTimeMillis()
+                        )
                     )
                     dataStoreManager.setPlaylistFromSaved(queueData.value.data.playlistName ?: "")
                     Logger.d(
@@ -2199,7 +2223,9 @@ class JvmMediaPlayerHandlerImpl(
     override fun mayBeRestoreQueue() {
         coroutineScope.launch {
             if (dataStoreManager.saveRecentSongAndQueue.first() == TRUE) {
-                val currentPlayingTrack = songRepository.getSongById(dataStoreManager.recentMediaId.first()).lastOrNull()?.toTrack()
+                val session = databaseDao.getPlaybackSession()
+                val recentId = session?.videoId ?: dataStoreManager.recentMediaId.first()
+                val currentPlayingTrack = songRepository.getSongById(recentId).lastOrNull()?.toTrack()
                 if (currentPlayingTrack != null) {
                     val queue = songRepository.getSavedQueue().singleOrNull()
                     setQueueData(
@@ -2220,7 +2246,7 @@ class JvmMediaPlayerHandlerImpl(
                     addMediaItem(currentPlayingTrack.toGenericMediaItem(), playWhenReady = false)
                     loadPlaylistOrAlbum(index = index)
                     loadJob?.join()
-                    val savedPosition = dataStoreManager.recentPosition.first().toLong()
+                    val savedPosition = session?.positionMs ?: dataStoreManager.recentPosition.first().toLong()
                     resetCrossfade()
                     player.seekTo(index, savedPosition)
                 }
