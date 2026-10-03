@@ -8,12 +8,22 @@ import createDataStore
 import java.io.File
 import java.util.Locale
 
-actual fun createDataStoreInstance(): DataStore<Preferences> = createDataStore(
-    producePath = {
-        val file = File(getHomeFolderPath(listOf(".wavora")), "$SETTINGS_FILENAME.preferences_pb")
-        file.absolutePath
-    }
-)
+// Un único DataStore por proceso para ~/.wavora/settings.preferences_pb. DesktopApp
+// reintenta startKoin{} ante fallos de arranque y cada Koin nuevo volvería a llamar
+// createDataStoreInstance(); dos DataStore sobre el mismo archivo es exactamente lo
+// que DataStore reporta como "multiple instances of DataStore" (rename del .tmp falla).
+private val settingsDataStore: DataStore<Preferences> by lazy {
+    RetryingDataStore(
+        createDataStore(
+            producePath = {
+                val file = File(getHomeFolderPath(listOf(".wavora")), "$SETTINGS_FILENAME.preferences_pb")
+                file.absolutePath
+            }
+        )
+    )
+}
+
+actual fun createDataStoreInstance(): DataStore<Preferences> = settingsDataStore
 
 // AUDIT NOTE (carteles en inglés antes de elegir idioma en Desktop):
 // DesktopApp.kt llama a changeLanguageNative() con este valor en CADA
