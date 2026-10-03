@@ -73,11 +73,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -88,6 +91,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -936,6 +940,7 @@ fun QueueBottomSheet(
             queueData?.data?.listTracks ?: emptyList()
         }
     }
+    val currentQueueIndex = remember(songEntity, queue) { musicServiceHandler.currentOrderIndex() }
     val loadMoreState by remember {
         derivedStateOf {
             queueData?.queueState ?: QueueData.StateSource.STATE_CREATED
@@ -1174,26 +1179,29 @@ fun QueueBottomSheet(
                                 index = index,
                                 modifier = Modifier,
                             ) { _ ->
-                                SongFullWidthItems(
-                                    track = track,
-                                    isPlaying = track.videoId == songEntity?.videoId,
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth(),
-                                    onClickListener = { videoId ->
-                                        if (videoId == track.videoId) {
-                                            musicServiceHandler.playMediaItemInMediaSource(index)
-                                        }
-                                    },
-                                    onMoreClickListener = {
-                                        showQueueItemBottomSheet(index)
-                                    },
-                                    onAddToQueue = {
-                                        sharedViewModel.addListToQueue(
-                                            arrayListOf(track),
-                                        )
-                                    },
-                                )
+                                SwipeToRemoveQueueItem(
+                                    enabled = index > currentQueueIndex,
+                                    onRemove = { musicServiceHandler.removeMediaItem(index) },
+                                ) {
+                                    SongFullWidthItems(
+                                        track = track,
+                                        isPlaying = track.videoId == songEntity?.videoId,
+                                        modifier =
+                                            Modifier
+                                                .fillMaxWidth(),
+                                        onClickListener = { videoId ->
+                                            if (videoId == track.videoId) {
+                                                musicServiceHandler.playMediaItemInMediaSource(index)
+                                            }
+                                        },
+                                        onMoreClickListener = {
+                                            showQueueItemBottomSheet(index)
+                                        },
+                                        // Null on purpose: SongFullWidthItems' horizontal drag would
+                                        // consume the gesture before SwipeToRemoveQueueItem sees it.
+                                        onAddToQueue = null,
+                                    )
+                                }
                             }
                         }
                     }
@@ -1213,6 +1221,39 @@ fun QueueBottomSheet(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SwipeToRemoveQueueItem(
+    enabled: Boolean,
+    onRemove: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    // Swipe state keeps the first confirmValueChange, so read the latest onRemove (its index) through rememberUpdatedState.
+    val currentOnRemove by rememberUpdatedState(onRemove)
+    val swipeState =
+        rememberSwipeToDismissBoxState(
+            confirmValueChange = { value ->
+                if (value != SwipeToDismissBoxValue.Settled) currentOnRemove()
+                true
+            },
+        )
+    SwipeToDismissBox(
+        state = swipeState,
+        enableDismissFromStartToEnd = enabled,
+        enableDismissFromEndToStart = enabled,
+        backgroundContent = {
+            // Red only while the row is being swiped; transparent at rest so no icon shows.
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(if (swipeState.dismissDirection != null) Color(0xFFB3261E) else Color.Transparent),
+            )
+        },
+    ) {
+        content()
     }
 }
 
