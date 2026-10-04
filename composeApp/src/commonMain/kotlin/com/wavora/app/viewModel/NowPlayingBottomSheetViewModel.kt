@@ -402,6 +402,7 @@ class NowPlayingBottomSheetViewModel(
                 is NowPlayingBottomSheetUIEvent.BlockSong -> {
                     songRepository.blockSong(songUIState.videoId)
                     makeToast("Song blocked")
+                    mediaPlayerHandler.onPlayerEvent(com.wavora.domain.mediaservice.handler.PlayerEvent.Next)
                 }
 
                 is NowPlayingBottomSheetUIEvent.BlockArtist -> {
@@ -409,6 +410,7 @@ class NowPlayingBottomSheetViewModel(
                         artist.id?.let { songRepository.blockArtist(it) }
                     }
                     makeToast("Artist(s) blocked")
+                    mediaPlayerHandler.onPlayerEvent(com.wavora.domain.mediaservice.handler.PlayerEvent.Next)
                 }
             }
         }

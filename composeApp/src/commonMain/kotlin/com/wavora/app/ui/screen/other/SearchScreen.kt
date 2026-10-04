@@ -157,6 +157,11 @@ fun SearchScreen(
 
     var isFocused by rememberSaveable { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        delay(100)
+        focusRequester.requestFocus()
+    }
+
     val searchForString = stringResource(Res.string.search_for)
     val songString = stringResource(Res.string.song).lowercase()
     val artistString = stringResource(Res.string.artists).lowercase()

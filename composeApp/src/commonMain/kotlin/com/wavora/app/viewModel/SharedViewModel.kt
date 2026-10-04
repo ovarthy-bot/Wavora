@@ -72,6 +72,11 @@ class SharedViewModel(
                 databaseDao.deleteBlockedArtist(artistId)
             } else {
                 databaseDao.insertBlockedArtist(com.wavora.domain.model.entities.BlockedArtistEntity(channelId = artistId, blockedAt = com.wavora.domain.extension.now()))
+                val nowPlaying = nowPlayingState.value
+                val isCurrentArtistBlocked =
+                    nowPlaying?.songEntity?.artistId?.contains(artistId) == true ||
+                        nowPlaying?.track?.artists?.any { it.id == artistId } == true
+                if (isCurrentArtistBlocked) player.onUIEvent(UIEvent.Next)
             }
         }
     }
@@ -82,6 +87,7 @@ class SharedViewModel(
                 databaseDao.deleteBlockedSong(videoId)
             } else {
                 databaseDao.insertBlockedSong(com.wavora.domain.model.entities.BlockedSongEntity(videoId = videoId, blockedAt = com.wavora.domain.extension.now()))
+                if (nowPlayingState.value?.mediaItem?.mediaId == videoId) player.onUIEvent(UIEvent.Next)
             }
         }
     }

@@ -4,6 +4,7 @@ import com.wavora.app.viewModel.AlbumViewModel
 import com.wavora.app.viewModel.AnalyticsViewModel
 import com.wavora.app.viewModel.AppViewModel
 import com.wavora.app.viewModel.ArtistViewModel
+import com.wavora.app.viewModel.BlockedListViewModel
 import com.wavora.app.viewModel.HomeViewModel
 import com.wavora.app.viewModel.LibraryDynamicPlaylistViewModel
 import com.wavora.app.viewModel.LibraryViewModel
@@ -173,6 +174,12 @@ val viewModelModule =
                 get(),
                 get(),
                 get(),
+            )
+        }
+        viewModel {
+            BlockedListViewModel(
+                get(), // SongRepository
+                get(), // ArtistRepository
             )
         }
     }

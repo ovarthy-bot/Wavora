@@ -49,6 +49,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
@@ -71,6 +72,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Forward5
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Replay5
+import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.ThumbsUpDown
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -330,6 +332,7 @@ fun NowPlayingScreenContent(
     // Artwork Pager state — Spotify-style horizontal swipe between queue tracks.
     // The pager wraps the Canvas + Thumbnail layers. Controller layout below stays fixed.
     val nowPlayingState by sharedViewModel.nowPlayingState.collectAsStateWithLifecycle()
+    val blockedArtistIds by sharedViewModel.blockedArtistIds.collectAsStateWithLifecycle()
     val queueDataState by sharedViewModel.getQueueDataState().collectAsStateWithLifecycle()
     val artworkQueue by remember {
         derivedStateOf { queueDataState?.data?.listTracks ?: emptyList() }
@@ -1717,6 +1720,30 @@ fun NowPlayingScreenContent(
                                             }
                                         }
                                         Spacer(modifier = Modifier.size(12.dp))
+                                        // Block artist button (🚫) next to heart
+                                        val currentArtistId = nowPlayingState?.songEntity?.artistId?.firstOrNull()?.takeIf { it.isNotEmpty() }
+                                            ?: screenDataState.songInfoData?.authorId
+                                        if (currentArtistId != null) {
+                                            val isArtistBlocked = blockedArtistIds.contains(currentArtistId)
+                                            IconButton(
+                                                modifier = Modifier
+                                                    .size(32.dp)
+                                                    .aspectRatio(1f)
+                                                    .clip(CircleShape)
+                                                    .wavoraIconGradient(),
+                                                onClick = {
+                                                    sharedViewModel.toggleBlockArtist(currentArtistId)
+                                                },
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.Block,
+                                                    tint = if (isArtistBlocked) Color(0xFFFF5252) else Color.White,
+                                                    contentDescription = if (isArtistBlocked) "Sanatçı engeli kaldır" else "Sanatçıyı engelle",
+                                                    modifier = Modifier.size(18.dp),
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.size(12.dp))
+                                        }
                                         HeartCheckBox(checked = controllerState.isLiked, size = 32) {
                                             sharedViewModel.onUIEvent(UIEvent.ToggleLike)
                                         }
@@ -1909,15 +1936,16 @@ fun NowPlayingScreenContent(
                                         Spacer(Modifier.height(16.dp))
                                     }
                                     // List Bottom Buttons - MODIFIED TO ADD PLAYLIST BUTTON
-                                    Row(
-                                        modifier =
-                                            Modifier
-                                                .height(32.dp)
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 20.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
+                                    Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
+                                        Row(
+                                            modifier =
+                                                Modifier
+                                                    .height(32.dp)
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 20.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
                                         // Info Button (Left)
                                         IconButton(
                                             modifier =
@@ -1976,6 +2004,7 @@ fun NowPlayingScreenContent(
                                             }
                                         }
                                     }
+                                    } // Close Column
                                 }
                                 androidx.compose.animation.AnimatedVisibility(
                                     visible = !showHideControlLayout,

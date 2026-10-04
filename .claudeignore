@@ -1,0 +1,32 @@
+# Derleme ve Önbellek Klasörleri
+build/
+.dart_tool/
+.git/
+.idea/
+.vscode/
+.claude/
+
+# Platform Klasörleri (Sadece Flutter kodu yazıyorsanız gerekmez)
+android/
+ios/
+windows/
+macos/
+linux/
+
+# Log ve Geçici Dosyalar
+*.log
+log.txt
+crash_log2.txt
+analysis*.txt
+out_*.txt
+*.lock
+
+# Binary (İkili) Dosyalar (Claude okuyamaz)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ttf
+*.otf
+*.jar
+*.keystore

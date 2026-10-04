@@ -1,0 +1,6 @@
+.\gradlew clean
+.\gradlew assembleRelease
+./gradlew assembleDebug
+.\gradlew packageMsi
+
+.\gradlew.bat installMobileDebug	//Telefonu apk yı kurma

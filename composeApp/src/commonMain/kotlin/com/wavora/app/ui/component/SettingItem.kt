@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -20,6 +21,8 @@ import com.wavora.app.extension.greyScale
 import com.wavora.app.ui.theme.typo
 import com.wavora.app.ui.theme.white
 import com.wavora.app.ui.theme.LocalAppTypography
+
+val LocalSettingSearchQuery = compositionLocalOf { "" }
 
 @Composable
 fun SettingItem(
@@ -32,6 +35,11 @@ fun SettingItem(
     onDisable: (() -> Unit)? = null, // Callback when the item is disabled, switch off settings
     otherView: @Composable (() -> Unit)? = null,
 ) {
+    val query = LocalSettingSearchQuery.current
+    if (query.isNotBlank() && !title.contains(query, ignoreCase = true) && !subtitle.contains(query, ignoreCase = true)) {
+        return
+    }
+
     LaunchedEffect(Unit) {
         if (!isEnable && onDisable != null) {
             onDisable.invoke()

@@ -6,11 +6,13 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.wavora.app.ui.navigation.destination.home.AnalyticsDestination
+import com.wavora.app.ui.navigation.destination.home.BlockedListDestination
 import com.wavora.app.ui.navigation.destination.home.CreditDestination
 import com.wavora.app.ui.navigation.destination.home.MoodDestination
 import com.wavora.app.ui.navigation.destination.home.NotificationDestination
 import com.wavora.app.ui.navigation.destination.home.RecentlySongsDestination
 import com.wavora.app.ui.navigation.destination.home.SettingsDestination
+import com.wavora.app.ui.screen.home.BlockedListScreen
 import com.wavora.app.ui.screen.home.MoodScreen
 import com.wavora.app.ui.screen.home.NotificationScreen
 import com.wavora.app.ui.screen.home.RecentlySongsScreen
@@ -56,6 +58,11 @@ fun NavGraphBuilder.homeScreenGraph(
         AnalyticsScreen(
             navController = navController,
             innerPadding = innerPadding,
+        )
+    }
+    composable<BlockedListDestination> {
+        BlockedListScreen(
+            navController = navController,
         )
     }
 }

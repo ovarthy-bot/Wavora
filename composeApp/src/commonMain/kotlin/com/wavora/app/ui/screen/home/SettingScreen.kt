@@ -39,7 +39,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Error
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Checkbox
@@ -58,6 +61,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -116,6 +120,8 @@ import com.wavora.app.ui.component.CenterLoadingBox
 import com.wavora.app.ui.component.EndOfPage
 import com.wavora.app.ui.component.RippleIconButton
 import com.wavora.app.ui.component.SettingItem
+import com.wavora.app.ui.component.LocalSettingSearchQuery
+import com.wavora.app.ui.navigation.destination.home.BlockedListDestination
 import com.wavora.app.ui.navigation.destination.home.CreditDestination
 import com.wavora.app.ui.navigation.destination.login.DiscordLoginDestination
 import com.wavora.app.ui.navigation.destination.login.LoginDestination
@@ -310,6 +316,7 @@ import wavora.composeapp.generated.resources.save_last_played
 import wavora.composeapp.generated.resources.save_last_played_track_and_queue
 import wavora.composeapp.generated.resources.save_playback_state
 import wavora.composeapp.generated.resources.save_shuffle_and_repeat_mode
+import wavora.composeapp.generated.resources.search
 import wavora.composeapp.generated.resources.send_back_listening_data_to_google
 import wavora.composeapp.generated.resources.set
 import wavora.composeapp.generated.resources.settings
@@ -577,6 +584,8 @@ fun SettingScreen(
     var showThirdPartyLibraries by rememberSaveable {
         mutableStateOf(false)
     }
+    
+    var searchQuery by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         viewModel.getAllGoogleAccount()
@@ -584,16 +593,26 @@ fun SettingScreen(
         viewModel.getThumbCacheSize(platformContext)
     }
 
-    LazyColumn(
-        contentPadding = innerPadding,
-        modifier =
-            Modifier
-                .padding(horizontal = 16.dp)
-                .hazeSource(hazeState),
-    ) {
-        item {
-            Spacer(Modifier.height(64.dp))
-        }
+    CompositionLocalProvider(LocalSettingSearchQuery provides searchQuery) {
+        LazyColumn(
+            contentPadding = innerPadding,
+            modifier =
+                Modifier
+                    .padding(horizontal = 16.dp)
+                    .hazeSource(hazeState),
+        ) {
+            item {
+                Spacer(Modifier.height(64.dp))
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    placeholder = { Text(stringResource(Res.string.search)) },
+                    leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
         item(key = "user_interface") {
             Column {
                 Spacer(Modifier.height(16.dp))
@@ -854,6 +873,24 @@ fun SettingScreen(
                     title = stringResource(Res.string.proxy),
                     subtitle = stringResource(Res.string.proxy_description),
                     switch = (usingProxy to { viewModel.setUsingProxy(it) }),
+                )
+            }
+        }
+        item(key = "blocked_list") {
+            Column {
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    text = "Engellenenler Listesi",
+                    style = LocalAppTypography.current.labelMedium,
+                    color = white,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
+                SettingItem(
+                    title = "Engellenenler",
+                    subtitle = "Engellenen şarkıları ve sanatçıları yönetin",
+                    onClick = {
+                        navController.navigate(BlockedListDestination)
+                    }
                 )
             }
         }
@@ -2156,6 +2193,7 @@ fun SettingScreen(
             EndOfPage()
         }
     }
+    } // End of CompositionLocalProvider
     val basisAlertData by viewModel.basicAlertData.collectAsStateWithLifecycle()
     if (basisAlertData != null) {
         val alertBasicState = basisAlertData ?: return
