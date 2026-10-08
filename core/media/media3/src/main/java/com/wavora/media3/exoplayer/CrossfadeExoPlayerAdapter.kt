@@ -35,6 +35,7 @@ import com.wavora.media3.cast.CastPlayerManager
 import com.wavora.media3.exoplayer.CrossfadeExoPlayerAdapter.Companion.SPEED_PITCH_STEP
 import com.wavora.media3.service.mediasourcefactory.MergingMediaSourceFactory
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
@@ -2177,14 +2178,16 @@ internal class CrossfadeExoPlayerAdapter(
         // throughout the audible overlap.
         val bpmRampPortion = BPM_RAMP_PORTION
 
-        crossfadeJob?.cancel()
-        crossfadeJob =
-            coroutineScope.launch {
-                try {
-                    for (step in 0..steps) {
-                        if (!isActive) break
+        // IMPORTANT: performCrossfade() runs inside the single crossfade coroutine
+        // created by triggerCrossfadeTransition(). Do not cancel/relaunch that same
+        // job here: doing so cancelled the transition coroutine from inside itself and
+        // made cancellation/fallback ordering racy. Keep one structured job for the
+        // entire transition so pause/next/previous can reliably stop all crossfade work.
+        try {
+            for (step in 0..steps) {
+                if (!currentCoroutineContext().isActive) break
 
-                        val progress = step.toFloat() / steps
+                val progress = step.toFloat() / steps
 
                         // Equal-power crossfade (cos/sin curves) instead of linear.
                         // Human loudness perception is logarithmic — linear volume fade makes
@@ -2255,25 +2258,27 @@ internal class CrossfadeExoPlayerAdapter(
                         }
 
                         delay(delayPerStep.toLong())
-                    }
-
-                    // Transition complete
-                    finalizeCrossfade(nextIndex, nextPlayer)
-                } catch (e: CancellationException) {
-                    Logger.d(TAG, "Crossfade cancelled")
-                    // Cleanup DJ filters
-                    currentPlayerFilter?.enabled = false
-                    secondaryPlayerFilter?.enabled = false
-                    // Restore outgoing player's speed/pitch to natural
-                    currentPlayer?.playbackParameters =
-                        PlaybackParameters(internalPlaybackSpeed, internalPlaybackPitch)
-                    // Cleanup player
-                    nextPlayer.release()
-                    secondaryPlayer = null
-                    secondaryPlayerFilter = null
-                    setCrossfading(false)
-                }
             }
+
+            // Transition complete
+            if (currentCoroutineContext().isActive) {
+                finalizeCrossfade(nextIndex, nextPlayer)
+            }
+        } catch (e: CancellationException) {
+            Logger.d(TAG, "Crossfade cancelled")
+            // Cleanup DJ filters
+            currentPlayerFilter?.enabled = false
+            secondaryPlayerFilter?.enabled = false
+            // Restore outgoing player's speed/pitch to natural
+            currentPlayer?.playbackParameters =
+                PlaybackParameters(internalPlaybackSpeed, internalPlaybackPitch)
+            // Cleanup player
+            runCatching { nextPlayer.release() }
+            secondaryPlayer = null
+            secondaryPlayerFilter = null
+            setCrossfading(false)
+            throw e
+        }
     }
 
     // ========== AutoMix Public API ==========

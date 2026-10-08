@@ -171,6 +171,27 @@ class PlayerViewModel(
         }
     }
 
+    /** Remove every currently queued track that is blocked by song id or artist id. */
+    suspend fun removeBlockedTracksFromQueue() {
+        val blockedSongIds = songRepository.getBlockedSongIds().toSet()
+        val blockedArtistIds = songRepository.getBlockedArtistIds().toSet()
+        val tracks = mediaPlayerHandler.queueData.value?.data?.listTracks.orEmpty()
+        val blockedIndices = tracks.mapIndexedNotNull { index, track ->
+            val blockedBySong = track.videoId in blockedSongIds
+            val blockedByArtist = track.artists?.any { it.id in blockedArtistIds } == true
+            val inferredArtistId =
+                if (track.artists.isNullOrEmpty()) {
+                    songRepository.getSongInfo(track.videoId).lastOrNull()?.authorId
+                } else {
+                    null
+                }
+            if (blockedBySong || blockedByArtist || (!inferredArtistId.isNullOrBlank() && inferredArtistId in blockedArtistIds)) index else null
+        }
+        blockedIndices.asReversed().forEach { index ->
+            mediaPlayerHandler.removeMediaItem(index)
+        }
+    }
+
     fun addListToQueue(listTrack: ArrayList<Track>) {
         viewModelScope.launch {
             if (listTrack.size == 1 && dataStoreManager.endlessQueue.first() == TRUE) {
@@ -239,6 +260,20 @@ class PlayerViewModel(
 
     fun loadMediaItemFromTrack(track: Track, type: String, index: Int? = null) {
         viewModelScope.launch {
+            val blockedSongIds = songRepository.getBlockedSongIds().toSet()
+            val blockedArtistIds = songRepository.getBlockedArtistIds().toSet()
+            val blockedBySong = track.videoId in blockedSongIds
+            val blockedByArtist = track.artists?.any { it.id in blockedArtistIds } == true
+            val inferredArtistId =
+                if (track.artists.isNullOrEmpty()) {
+                    songRepository.getSongInfo(track.videoId).lastOrNull()?.authorId
+                } else {
+                    null
+                }
+            if (blockedBySong || blockedByArtist || (!inferredArtistId.isNullOrBlank() && inferredArtistId in blockedArtistIds)) {
+                log("Blocked track rejected from direct playback: ${track.videoId}")
+                return@launch
+            }
             mediaPlayerHandler.clearMediaItems()
             songRepository.insertSong(track.toSongEntity()).lastOrNull()
             track.durationSeconds?.let { songRepository.updateDurationSeconds(it, track.videoId) }

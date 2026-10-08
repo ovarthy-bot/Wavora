@@ -930,6 +930,7 @@ fun QueueBottomSheet(
             }
         }
     var overscrollJob by remember { mutableStateOf<Job?>(null) }
+    val isDesktop = getPlatform() == Platform.Desktop
     var shouldShowQueueItemBottomSheet by rememberSaveable { mutableStateOf(false) }
     var clickMoreIndex by rememberSaveable { mutableIntStateOf(0) }
     val screenDataState by sharedViewModel.nowPlayingScreenData.collectAsStateWithLifecycle()
@@ -1126,48 +1127,40 @@ fun QueueBottomSheet(
                     horizontalAlignment = Alignment.Start,
                     state = lazyListState,
                     modifier =
-                        Modifier
-                            .pointerInput(Unit) {
+                        if (isDesktop) {
+                            Modifier.pointerInput(Unit) {
                                 detectDragGesturesAfterLongPress(
                                     onDrag = { change, offset ->
-                                        Logger.d("QueueBottomSheet", "onDrag $offset")
                                         change.consume()
                                         dragDropState.onDrag(offset = offset)
-
-                                        if (overscrollJob?.isActive == true) {
-                                            return@detectDragGesturesAfterLongPress
-                                        }
-
+                                        if (overscrollJob?.isActive == true) return@detectDragGesturesAfterLongPress
                                         dragDropState
                                             .checkForOverScroll()
                                             .takeIf { it != 0f }
-                                            ?.let {
-                                                overscrollJob =
-                                                    coroutineScope.launch {
-                                                        dragDropState.state.animateScrollBy(
-                                                            it * 1.3f,
-                                                            tween(easing = FastOutLinearInEasing),
-                                                        )
-                                                    }
+                                            ?.let { overscroll ->
+                                                overscrollJob = coroutineScope.launch {
+                                                    dragDropState.state.animateScrollBy(
+                                                        overscroll * 1.3f,
+                                                        tween(easing = FastOutLinearInEasing),
+                                                    )
+                                                }
                                             }
                                             ?: run { overscrollJob?.cancel() }
                                     },
-                                    onDragStart = { offset ->
-                                        Logger.d("QueueBottomSheet", "onDragStart $offset")
-                                        dragDropState.onDragStart(offset)
-                                    },
+                                    onDragStart = { offset -> dragDropState.onDragStart(offset) },
                                     onDragEnd = {
-                                        Logger.d("QueueBottomSheet", "onDragEnd")
                                         dragDropState.onDragInterrupted(true)
                                         overscrollJob?.cancel()
                                     },
                                     onDragCancel = {
-                                        Logger.d("QueueBottomSheet", "onDragCancel")
                                         dragDropState.onDragInterrupted()
                                         overscrollJob?.cancel()
                                     },
                                 )
-                            },
+                            }
+                        } else {
+                            Modifier
+                        },
                 ) {
                     itemsIndexed(
                         queue,

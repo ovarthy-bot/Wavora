@@ -38,4 +38,3 @@ internal sealed class Platform {
      */
     fun isIOS() = this is IOS
 }
-

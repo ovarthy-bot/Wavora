@@ -37,4 +37,3 @@ interface CookieManager {
      * */
     suspend fun removeCookies(url: String)
 }
-

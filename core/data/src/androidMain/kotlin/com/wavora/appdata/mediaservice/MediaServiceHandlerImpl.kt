@@ -1474,19 +1474,54 @@ internal class MediaServiceHandlerImpl(
         }
     }
 
+
+    /**
+     * Returns true when a track is blocked by song id or by any of its artists.
+     * Some queue entries arrive without an artist list, so fall back to cached SongInfo
+     * to enforce artist blocking consistently for those entries as well.
+     */
+    private suspend fun isTrackBlocked(
+        track: Track,
+        blockedSongIds: Set<String>,
+        blockedArtistIds: Set<String>,
+    ): Boolean {
+        if (track.videoId in blockedSongIds) return true
+        if (track.artists?.any { it.id in blockedArtistIds } == true) return true
+        if (track.artists.isNullOrEmpty()) {
+            val authorId = songRepository.getSongInfo(track.videoId).lastOrNull()?.authorId
+            if (!authorId.isNullOrBlank() && authorId in blockedArtistIds) return true
+        }
+        return false
+    }
+
+    private suspend fun filterBlockedTracks(tracks: List<Track>): ArrayList<Track> {
+        if (tracks.isEmpty()) return arrayListOf()
+        val blockedSongIds = songRepository.getBlockedSongIds().toSet()
+        val blockedArtistIds = songRepository.getBlockedArtistIds().toSet()
+        return ArrayList(
+            tracks.filterNot { track ->
+                isTrackBlocked(track, blockedSongIds, blockedArtistIds)
+            },
+        )
+    }
+
     override suspend fun loadMoreCatalog(
         listTrack: ArrayList<Track>,
         isAddToQueue: Boolean,
     ) {
-        Logger.d("Queue", listTrack.map { it.title }.toString())
+        val filteredTracks = filterBlockedTracks(listTrack)
+        if (filteredTracks.size != listTrack.size) {
+            Logger.d("Queue", "Blocked tracks removed: ${listTrack.size - filteredTracks.size}")
+        }
+        Logger.d("Queue", filteredTracks.map { it.title }.toString())
         _queueData.update {
             it.copy(
                 queueState = QueueData.StateSource.STATE_INITIALIZING,
             )
         }
         val catalogMetadata: ArrayList<Track> = arrayListOf()
-        for (i in 0 until listTrack.size) {
-            val track = listTrack[i]
+        for (i in 0 until filteredTracks.size) {
+            val track = filteredTracks[i]
             var thumbUrl =
                 track.thumbnails?.lastOrNull()?.url
                     ?: "http://i.ytimg.com/vi/${track.videoId}/maxresdefault.jpg"
@@ -1605,8 +1640,9 @@ internal class MediaServiceHandlerImpl(
                 queueState = QueueData.StateSource.STATE_INITIALIZING,
             )
         }
-        val tempQueue: ArrayList<Track> = arrayListOf()
-        tempQueue.addAll(queueData.value.data.listTracks)
+        val originalQueue = queueData.value.data.listTracks
+        val currentTrack = index?.let { originalQueue.getOrNull(it) }
+        val tempQueue = filterBlockedTracks(originalQueue)
         val chunkedList = tempQueue.chunked(100)
         // Reset queue
         _queueData.update {
@@ -1617,7 +1653,7 @@ internal class MediaServiceHandlerImpl(
                     ),
             )
         }
-        val current = if (index != null) tempQueue.getOrNull(index) else null
+        val current = currentTrack?.takeUnless { isTrackBlocked(it, songRepository.getBlockedSongIds().toSet(), songRepository.getBlockedArtistIds().toSet()) }
         chunkedList.forEach { list ->
             val catalogMetadata: ArrayList<Track> = arrayListOf()
             Logger.w("SimpleMediaServiceHandler", "Catalog size: ${tempQueue.size}")
@@ -1841,6 +1877,12 @@ internal class MediaServiceHandlerImpl(
     }
 
     override suspend fun playNext(track: Track) {
+        val blockedSongIds = songRepository.getBlockedSongIds().toSet()
+        val blockedArtistIds = songRepository.getBlockedArtistIds().toSet()
+        if (isTrackBlocked(track, blockedSongIds, blockedArtistIds)) {
+            Logger.d("Queue", "Blocked track rejected from playNext: ${track.videoId}")
+            return
+        }
         _queueData.update {
             it.copy(
                 queueState = QueueData.StateSource.STATE_INITIALIZING,
@@ -1974,6 +2016,12 @@ internal class MediaServiceHandlerImpl(
             }
         if (track.isExplicit && dataStoreManager.explicitContentEnabled.first() == FALSE) {
             showToast(ToastType.ExplicitContent)
+            return
+        }
+        val blockedSongIds = songRepository.getBlockedSongIds().toSet()
+        val blockedArtistIds = songRepository.getBlockedArtistIds().toSet()
+        if (isTrackBlocked(track, blockedSongIds, blockedArtistIds)) {
+            Logger.d("Queue", "Blocked track rejected from direct playback: ${track.videoId}")
             return
         }
         songRepository.insertSong(track.toSongEntity()).singleOrNull()?.let {

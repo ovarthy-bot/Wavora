@@ -334,5 +334,3 @@ private fun BrandProgressBar(progress: Float?) {
         }
     }
 }
-
-

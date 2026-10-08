@@ -10,4 +10,3 @@ data class PlaybackSessionEntity(
     val positionMs: Long,
     val timestamp: Long
 )
-

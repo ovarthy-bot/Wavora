@@ -22,4 +22,3 @@ fun String.toRpcImage(): RpcImage? {
     else
         RpcImage.ExternalImage(this)
 }
-
